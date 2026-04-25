@@ -22,6 +22,18 @@ IRuntimeVariable::IRuntimeVariable(ScriptProperty* prop) : IRuntimeVariable() {
   prop->ReadProperty("ModSettings.description", &this->description);
   prop->ReadProperty<uint32_t>("ModSettings.order", &this->order, (uint32_t)-1);
   this->className = prop->parent->name;
+
+  // gwheel patch: ModSettings.hidden ("true" / "1") suppresses UI rendering of
+  // this field while leaving it discoverable as a `ModSettings.dependency`
+  // target. Direct string compare bypasses the type-aware FromString template
+  // path (which mis-parses non-CName/CString values for non-bool fields).
+  auto hiddenStr = prop->runtimeProperties.Get("ModSettings.hidden");
+  if (hiddenStr) {
+    std::string s(hiddenStr->c_str());
+    if (s == "true" || s == "1") {
+      this->bitfield.isVisible = false;
+    }
+  }
   
   char str[0x200];
   // std::sprintf(str, "/mods/%s/%s", prop->parent->name.ToString(), this->name.ToString());

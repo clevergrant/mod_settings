@@ -257,6 +257,21 @@ DynArray<CName> ModSettings::GetCategories(CName modName) {
   });
   for (auto const &[categoryName, category] : modCategories) {
     if (categoryName != "None" && !category->variables.empty()) {
+      // gwheel patch: skip categories where every variable is currently
+      // disabled by `ModSettings.dependency`. The stock ModStngsMain
+      // GameController spawns a header widget for every subcategory it
+      // sees; without this filter, hardware-gated sections (e.g. the
+      // Lower-cluster bindings group when no wheel with a right cluster
+      // is attached) leave behind a stranded header bar with no rows.
+      bool anyEnabled = false;
+      for (auto const &[variableName, variable] : category->variables) {
+        if (variable->IsEnabled()) {
+          anyEnabled = true;
+          break;
+        }
+      }
+      if (!anyEnabled) continue;
+
       auto position = std::find(array.begin(), array.end(), categoryName);
       if (position == array.end())
         array.EmplaceBack(categoryName);
